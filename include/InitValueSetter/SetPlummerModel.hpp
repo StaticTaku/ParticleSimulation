@@ -32,7 +32,7 @@ double constexpr ct_sqrt(double x)
 constexpr double M_PI2 = 2 * M_PI;
 constexpr double sq2 = ct_sqrt(2.0);
 
-void SetPlummerModel(int seed,real Mass,real R,CoreData& data)
+inline void SetPlummerModel(int seed,real Mass,real R,CoreData& data)
 {
 #pragma omp parallel
 	{

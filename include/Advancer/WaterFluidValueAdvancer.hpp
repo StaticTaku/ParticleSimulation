@@ -1,16 +1,17 @@
 #pragma once
+#include <cmath>
 #include <Settings.hpp>
 #include <cmath>
 #include <PhysicsValue/SphDataWithGamma.hpp>
 #include <PhysicsValue/SphCoreData.hpp>
 #include <CalculatedResult/FluidResult.hpp>
-#include <Advancer/VelocityVerlet.hpp>
+#include <Advancer/VelocityVerlet_Boundary.hpp>
 
-constexpr real B = 3000;
-constexpr real dens0 = 997;
+constexpr real B = 0.03;
+constexpr real dens0 = 9.97;
 constexpr int n = 7;
 
-class WaterFluidValueAdvancer:public VelocityVerlet
+class WaterFluidValueAdvancer:public VelocityVerlet_Boundary
 {
 public:
     void UpdateDensityAndPressure(SphCoreDataWithFixedH& data, const FluidResult& result)
@@ -23,10 +24,8 @@ public:
             {
                 data.density[i] = 0;
                 for(int j = 0;j<data.number;++j)
-                {
                     data.density[i] += data.mass[j]*data.kernelW(data.position[i],data.position[j],h);
-                    data.pressure[i] = B*(std::pow(data.density[i]/dens0,n)-1);
-                }
+                data.pressure[i] = B*data.density[i];
             }
         }
     }

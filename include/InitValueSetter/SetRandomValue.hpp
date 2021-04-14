@@ -5,7 +5,7 @@
 #include <omp.h>
 #include <random>
 
-void SetRandomValue(int seed, real R, real Mass, real maxSpeed, CoreData& data)
+inline void SetRandomValue(int seed, real R, real Mass, real maxSpeed, CoreData& data)
 {
 #pragma omp parallel
 	{

@@ -3,6 +3,7 @@
 #include <Settings.hpp>
 #include <PhysicsValue/SphDataWithGamma.hpp>
 
+constexpr real MIN = 1e-4;
 inline real GetNextTimeStep(const SphDataWithGamma& data)
 {
     real MinDt = 1e5;
@@ -20,5 +21,5 @@ inline real GetNextTimeStep(const SphDataWithGamma& data)
         }
     }
 
-    return Ccfl*data.h/MinDt;
+    return std::min(Ccfl*data.h/MinDt,MIN);
 }

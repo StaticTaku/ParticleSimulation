@@ -15,12 +15,12 @@ using namespace std;
 constexpr int number = N;
 constexpr real h = 0.05;
 constexpr real heatCapRatio = 1.4;
-constexpr real alpha = 0.5; //人口粘性の強さを決める係数
+constexpr real alpha = 1.0; //人口粘性の強さを決める係数
 constexpr real cbeta = 2*alpha; //人口粘性の強さを決める係数
 real dt = 0;
 
 constexpr double dens_L = 1.0;
-constexpr double vel_L = 0;
+constexpr double vel_L = 0.75;
 constexpr double pres_L = 1.0;
 
 constexpr double dens_R = 0.125;
@@ -46,7 +46,7 @@ int main()
 
     double t = 0;
 
-    while(t < 10)
+    while(t < 5)
     {
         for(int j = 0;j<data.number;++j)
         {

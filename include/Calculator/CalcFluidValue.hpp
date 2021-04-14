@@ -10,7 +10,6 @@ class CalcFluidValue
 public:
     real alpha = 0.5; //人口粘性の強さを決める係数
 	real beta = 2*alpha; //人口粘性の強さを決める係数
-    real dt;
 
     CalcFluidValue(real _alpha, real _beta):alpha(_alpha),beta(_beta) {}
     void operator()(const SphDataWithGamma& data, FluidResult& result)
@@ -110,17 +109,17 @@ public:
         {
 			return 0;
         }
-        
 
 		double hij = (hi + hj)/2.0;
 		double densij = (densi + densj)/2.0;
 		double cij = (sqrt(heatCapRatio*presi/densi)+sqrt(heatCapRatio*presj/densj))/2.0;
-
+        
         double _uij = 0;
         for(int d = 0;d<DIM;++d)
         {
             _uij += (rij[d]*rij[d]);
         }
+        
 		double uij = hij*rij_dot_vij/(_uij+eta*hij*hij);
 		
 		return (-alpha*cij*uij+beta*uij*uij)/densij;

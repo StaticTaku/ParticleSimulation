@@ -1,5 +1,5 @@
 #pragma once
-#define N_BodyPlummerModel
+#define ShockTube
 
 #if defined(N_BodyPlummerModel)
     using real = double;
@@ -11,6 +11,13 @@
     using real = double;
     constexpr short DIM = 1;
     constexpr int N = 2000;
+    constexpr real ZERO = 1.0e-8;
+    constexpr real eta = 1e-5; //0割りの回避のための定数
+    constexpr real Ccfl = 0.1;
+#elif defined(WaterDam)
+    using real = double;
+    constexpr short DIM = 2;
+    constexpr int N = 50000;
     constexpr real ZERO = 1.0e-8;
     constexpr real eta = 1e-5; //0割りの回避のための定数
     constexpr real Ccfl = 0.1;
