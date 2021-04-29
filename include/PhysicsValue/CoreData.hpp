@@ -1,7 +1,6 @@
 #pragma once
 #include <Settings.hpp>
 
-
 struct CoreData
 {
     int number;

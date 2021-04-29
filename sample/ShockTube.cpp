@@ -1,6 +1,8 @@
+#define ShockTube
+#include <Settings.hpp>
+
 #include <iostream>
 #include <fstream>
-#include <Settings.hpp>
 #include <KernelFunction/CubicSpline.hpp>
 #include <Calculator/CalcFluidValue.hpp>
 #include <PhysicsValue/SphDataWithGamma.hpp>
@@ -10,23 +12,8 @@
 #include <InitValueSetter/SetShockTube.hpp>
 #include <TimeStepDecider/GetTimeStep.hpp>
 #include <omp.h>
+
 using namespace std;
-
-constexpr int number = N;
-constexpr real h = 0.05;
-constexpr real heatCapRatio = 1.4;
-constexpr real alpha = 0.5; //人口粘性の強さを決める係数
-constexpr real cbeta = 2*alpha; //人口粘性の強さを決める係数
-real dt = 0;
-
-constexpr double dens_L = 1.0;
-constexpr double vel_L = 0;
-constexpr double pres_L = 1.0;
-
-constexpr double dens_R = 0.125;
-constexpr double vel_R = 0.0;
-constexpr double pres_R = 0.1;  
-constexpr real length = 12;
 
 ofstream fs("Data/ShockTube/fluidValue.csv");
 
@@ -56,7 +43,7 @@ int main()
         
         cout << t << "\n";
 
-        dt = GetNextTimeStep(data);
+        dt = 0.002;
         t += dt;
 
         fluidAdvancer.UpdatePosition(data,result,dt);

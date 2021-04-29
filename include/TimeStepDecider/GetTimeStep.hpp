@@ -6,6 +6,7 @@
 inline real GetNextTimeStep(const SphDataWithGamma& data)
 {
     real MinDt = 1e5;
+    const real Min = 1e-4;
 #pragma omp parallel
     {
         real tempThreadMinDt = 1e5;
@@ -20,5 +21,5 @@ inline real GetNextTimeStep(const SphDataWithGamma& data)
         }
     }
 
-    return Ccfl*data.h/MinDt;
+    return std::max(Ccfl*data.h/MinDt,Min);
 }
