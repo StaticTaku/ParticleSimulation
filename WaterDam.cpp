@@ -1,6 +1,8 @@
+#define WaterDam
+#include <Settings.hpp>
+
 #include <iostream>
 #include <fstream>
-#include <Settings.hpp>
 #include <KernelFunction/CubicSpline.hpp>
 #include <Calculator/CalcFluidValue.hpp>
 #include <Calculator/AddGravity.hpp>
@@ -11,14 +13,8 @@
 #include <InitValueSetter/SetWaterDam.hpp>
 #include <TimeStepDecider/GetTimeStep.hpp>
 #include <omp.h>
-using namespace std;
 
-constexpr int number = N;
-constexpr real h = 0.01;
-constexpr real heatCapRatio = 1.4;
-constexpr real alpha = 1.0; //人口粘性の強さを決める係数
-constexpr real cbeta = 2*alpha; //人口粘性の強さを決める係数
-real dt = 0.001;
+using namespace std;
 
 ofstream fs("Data/WaterDam/fluidValue.csv");
 ofstream fs2("Data/WaterDam/density.csv");
