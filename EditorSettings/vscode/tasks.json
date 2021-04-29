@@ -1,0 +1,44 @@
+
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "DebugBuild",
+        "type": "shell",
+        "command": "g++",
+        "args": [
+          "-g",
+          "${file}",
+          "-o",
+          "${fileBasenameNoExtension}",
+          "-I${workspaceFolder}/include",
+          "-fopenmp"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        }
+      },
+      {
+        "label": "ReleaseBuild",
+        "type": "shell",
+        "command": "g++",
+        "args": [
+          "-g",
+          "-O2",
+          "${file}",
+          "-o",
+          "${fileBasenameNoExtension}",
+          "-I${workspaceFolder}/include",
+          "-fopenmp"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": []
+      }
+    ]
+  }
