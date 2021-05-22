@@ -20,18 +20,18 @@ ofstream fs("Data/ShockTube/fluidValue.csv");
 int main()
 {   
     omp_set_num_threads(12);
-    SphDataWithGamma data(KernelW,GradKernelW,h,heatCapRatio,N);
-    FluidValueAdvancer fluidAdvancer;
-    FluidResult result;
-    CalcFluidValue CalcFluid(alpha,cbeta);
+    SphDataWithGamma data(KernelW,GradKernelW,h,heatCapRatio,N); //現時点でのposition,velocity,accel,mass,density,pressure,internalEnergy,h,heatCapRatioを持った構造体
+    FluidValueAdvancer fluidAdvancer; //現時点でのdensiy,pressure,internalEnergy,position,velocityを求め、dataに格納するクラス
+    FluidResult result; //accel,internalEnergyDifの計算結果を格納する構造体
+    CalcFluidValue CalcFluid(alpha,cbeta); //現時点でのaccel,internalEnergyDifを求め、resultに格納するクラス
 
-    SetShockTube(dens_L,pres_L,vel_L,dens_R,pres_R,vel_R,length,data);
+    SetShockTube(dens_L,pres_L,vel_L,dens_R,pres_R,vel_R,length,data);//初期条件を設定する。position,velocity,mass,density,pressure,internalEnergyを決定する
 
     result.ClearAccelAndIEDif(data.number);
-    CalcFluid(data,result);
+    CalcFluid(data,result); //現時点でのaccel,internalEnergyDifを求める
     std::swap(data.accel,result.accel);//初期時刻におけるsph粒子のaccelをdata構造体に設定
 
-    double t = 0;
+    real t = 0;
 
     while(t < 10)
     {
@@ -44,20 +44,24 @@ int main()
         cout << t << "\n";
 
         dt = 0.002;
-        t += dt;
+        t += dt;//時間をdt進める
 
-        fluidAdvancer.UpdatePosition(data,result,dt);
-        fluidAdvancer.UpdateDensity(data,result);
-        fluidAdvancer.PredictInternalEnergyAndPressure(data,result,dt);
+        //この時点でdata構造体に格納されているデータはすべてdtだけ前のデータ
 
-        std::swap(result.internalEnergyDif,result.pastInternalEnergyDif);//時刻tの内部エネルギーの時間微分(internalEnergyDif)をpastInternalEnergyDifへ移動
+        fluidAdvancer.UpdatePosition(data,result,dt); //現在のpositionを求める
+        fluidAdvancer.UpdateDensity(data,result); //現在のdensityを求める
+        fluidAdvancer.PredictInternalEnergyAndPressure(data,result,dt); //暫定的に現在のpressureを求める
+
+        std::swap(result.internalEnergyDif,result.pastInternalEnergyDif);//dt前の内部エネルギーの時間微分が格納されている(internalEnergyDifに格納されている)をpastInternalEnergyDifへ移動
 
         result.ClearAccelAndIEDif(data.number);
-        CalcFluid(data,result);//内部エネルギーの時間微分(result.internalEnergyDif)と加速度(result.accel)を求める
+        CalcFluid(data,result);//現在の内部エネルギーの時間微分(result.internalEnergyDif)と加速度(result.accel)を求める
 
-        fluidAdvancer.UpdateInternalEnergyAndPressure(data,result,dt);
-        fluidAdvancer.UpdateVelocity(data,result,dt);
-        std::swap(data.accel,result.accel);
+        fluidAdvancer.UpdateInternalEnergyAndPressure(data,result,dt);//現在のinternalEnergyとpressureを求める
+        fluidAdvancer.UpdateVelocity(data,result,dt); //現在のvelocityを求める
+        std::swap(data.accel,result.accel); //現時点での加速度(result.accel)をdata.accelに移動
+
+        //この時点でdata構造体に格納されている物理量はすべて最新の状態に
     }  
 
     cout << t << "\n";

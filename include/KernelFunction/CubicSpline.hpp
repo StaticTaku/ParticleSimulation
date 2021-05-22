@@ -6,7 +6,7 @@
 constexpr real sigma[3] = {2.0/3, 10.0 / (7.0 * M_PI), 1.0 / M_PI};
 constexpr real sigma2[3] = {3.0/2, 45.0/(14 * M_PI), 9.0/(4*M_PI)};
 
-real KernelW(real ri[],real rj[], real hi)
+real KernelW(const real ri[],const real rj[], const real hi)
 {
     real length_ij_2 = 0;
     for(int d = 0;d<DIM;++d)
@@ -22,7 +22,7 @@ real KernelW(real ri[],real rj[], real hi)
         return 0;
 }
 
-void GradKernelW(real ri[],real rj[], real hi, real* ans)
+void GradKernelW(const real ri[],const real rj[], const real hi, real* ans)
 {
     real length_ij_2 = 0;
     for(int d = 0;d<DIM;++d)

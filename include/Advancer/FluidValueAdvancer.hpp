@@ -46,7 +46,7 @@ public:
     #pragma omp for
             for(int i = 0;i<data.number;++i)
             {
-                data.internalEnergy[i] += 0.5 * (result.internalEnergyDif[i] + result.pastInternalEnergyDif[i]) * dt;
+                data.internalEnergy[i] += 0.5 * (result.internalEnergyDif[i] + result.pastInternalEnergyDif[i]) * dt;//修正オイラー法
                 data.pressure[i] = data.internalEnergy[i]*(heatCapRatio_1*data.density[i]);
             }
         }

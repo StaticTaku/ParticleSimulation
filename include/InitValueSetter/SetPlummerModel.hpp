@@ -1,4 +1,5 @@
 #pragma once
+#include <Settings.hpp>
 #include <PhysicsValue/CoreData.hpp>
 #include <random>
 #include <omp.h>
@@ -8,7 +9,7 @@
 
 namespace Detail
 {
-    double constexpr sqrtNewtonRaphson(double x, double curr, double prev)
+    real constexpr sqrtNewtonRaphson(real x, real curr, real prev)
     {
         return curr == prev
             ? curr
@@ -22,26 +23,26 @@ namespace Detail
 *   - For a finite and non-negative value of "x", returns an approximation for the square root of "x"
 *   - Otherwise, returns NaN
 */
-double constexpr ct_sqrt(double x)
+real constexpr ct_sqrt(real x)
 {
-    return x >= 0 && x < std::numeric_limits<double>::infinity()
+    return x >= 0 && x < std::numeric_limits<real>::infinity()
         ? Detail::sqrtNewtonRaphson(x, x, 0)
-        : std::numeric_limits<double>::quiet_NaN();
+        : std::numeric_limits<real>::quiet_NaN();
 }
 
-constexpr double M_PI2 = 2 * M_PI;
-constexpr double sq2 = ct_sqrt(2.0);
+constexpr real M_PI2 = 2 * M_PI;
+constexpr real sq2 = ct_sqrt(2.0);
 
 inline void SetPlummerModel(int seed,real Mass,real R,CoreData& data)
 {
 #pragma omp parallel
 	{
 		int i;
-		double r,rz,v,vz;
-		double X1, X2, X3, X4, X5, X6, X7;
+		real r,rz,v,vz;
+		real X1, X2, X3, X4, X5, X6, X7;
 		std::default_random_engine engine(seed + omp_get_thread_num());
-		std::uniform_real_distribution<double> dist(0.0, 1.0);
-		double _mass = Mass/data.number;
+		std::uniform_real_distribution<real> dist(0.0, 1.0);
+		real _mass = Mass/data.number;
 		
 #pragma omp for
 		for (i = 0; i < data.number; ++i)
