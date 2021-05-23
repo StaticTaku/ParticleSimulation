@@ -144,24 +144,29 @@ namespace TheoreticalData
 
         inline double GetDensity(const double x)
         {
-                if(x <= -0.1674724)
-                    return dens_L;
-                if(-0.1674724 < x && x <= -0.0099465)
-                {
-                    return pow(GetPressure(x)*dens_L/pres_L,1/heatCapRatio);
-                }
-                if(-0.0099465 < x && x <= 0.1312716)
-                {
-                    return 0.4263192;
-                }
-                if(0.1312716 < x && x <= 0.2480001)
-                {
-                    return 0.2655736;
-                }
-                if(0.2480001 < x)
-                {
-                    return vel_R;
-                }
+            if(x <= -0.1674724)
+                return dens_L;
+            if(-0.1674724 < x && x <= -0.0099465)
+            {
+                return pow(GetPressure(x)*dens_L/pres_L,1/heatCapRatio);
+            }
+            if(-0.0099465 < x && x <= 0.1312716)
+            {
+                return 0.4263192;
+            }
+            if(0.1312716 < x && x <= 0.2480001)
+            {
+                return 0.2655736;
+            }
+            if(0.2480001 < x)
+            {
+                return vel_R;
+            }
+        }
+
+        inline double GetInternalEnergy(const double x)
+        {
+            return 0;
         }
     }
 }

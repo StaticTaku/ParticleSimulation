@@ -16,15 +16,15 @@ using real = double;
 #elif defined(ShockTube) //SPH法で実装
     using real = double;
     constexpr short DIM = 1; //次元
-    constexpr int N = 2000; //粒子数
+    constexpr int N = 1000; //粒子数
     constexpr real ZERO = 1.0e-8; //絶対値がこれ以下の値は0とみなす
     constexpr real eta = 1e-5; //0割りの回避のための定数
     constexpr real Ccfl = 0.1; 
 
     constexpr int number = N;
-    constexpr real h = 0.05; //固定長
+    constexpr real h = 0.1; //固定長
     constexpr real heatCapRatio = 1.4; //気体の比熱
-    constexpr real alpha = 1.0; //人口粘性の強さを決める係数
+    constexpr real alpha = 0.5; //人口粘性の強さを決める係数
     constexpr real cbeta = 2*alpha; //人口粘性の強さを決める係数
     real dt = 0;
 
@@ -36,7 +36,7 @@ using real = double;
     constexpr double vel_R = 0.0; //衝撃波管の右側気体の速度
     constexpr double pres_R = 0.1; //衝撃波管の右側気体の圧力
 
-    constexpr real length = 12; //衝撃波管の全体の長さ
+    constexpr real length = 6; //衝撃波管の全体の長さ
 
 #elif defined(WaterDam)
     using real = double;
