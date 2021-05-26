@@ -1,4 +1,4 @@
-#define ShockTube
+#define ShockTube2D
 #include <Settings.hpp>
 
 #include <iostream>
@@ -16,8 +16,11 @@
 
 using namespace std;
 
-ofstream fs("Data/ShockTube/fluidValue.csv");
-ofstream fs2("Data/ShockTube/ShockTubeAnalitic.csv");
+#if defined(ShockTube)
+    ofstream fs("Data/ShockTube/1D/fluidValue.csv");
+#elif defined(ShockTube2D)
+    ofstream fs("Data/ShockTube/2D/fluidValue.csv");
+#endif
 
 int main()
 {   
@@ -27,7 +30,11 @@ int main()
     FluidResult result; //accel,internalEnergyDifの計算結果を格納する構造体
     CalcFluidValue CalcFluid(alpha,cbeta); //現時点でのaccel,internalEnergyDifを求め、resultに格納するクラス
 
-    SetShockTube1D(dens_L,pres_L,vel_L,dens_R,pres_R,vel_R,length,data);//初期条件を設定する。position,velocity,mass,density,pressure,internalEnergyを決定する
+    #if defined(ShockTube)
+        SetShockTube1D(dens_L,pres_L,vel_L,dens_R,pres_R,vel_R,length,data);//初期条件を設定する。position,velocity,mass,density,pressure,internalEnergyを決定する
+    #elif defined(ShockTube2D)
+        SetShockTube2D(dens_L,pres_L,vel_L,dens_R,pres_R,vel_R,x_length,y_length,x_num,y_num,data);//初期条件を設定する。position,velocity,mass,density,pressure,internalEnergyを決定する
+    #endif
 
     result.ClearAccelAndIEDif(data.number);
     CalcFluid(data,result); //現時点でのaccel,internalEnergyDifを求める
@@ -35,12 +42,11 @@ int main()
 
     real t = 0;
     constexpr real endTime = 0.14154;
-    
-    for(int _ = 0;_ < 77;++_)
+    dt = 0.00002;
+    for(int _ = 0;_ < endTime/dt;++_)
     {
         cout << t << "\n";
 
-        dt = 0.002;
         t += dt;//時間をdt進める
 
         //この時点でdata構造体に格納されているデータはすべてdtだけ前のデータ
@@ -82,16 +88,11 @@ int main()
 
     //この時点でdata構造体に格納されている物理量はすべて最新の状態に
 
-    for(int i = 0;i<data.number;++i)
-    {
-        fs << data.position[i][0] << "," << data.pressure[i] << "," << data.density[i] << "," << data.velocity[i][0] << "," <<  data.internalEnergy[i] << "\n";
-    }
-
-    using namespace TheoreticalData::SODsShockTube1D;
-    for(int i = -500;i<=500;++i)
-    {
-        double x = i/500.0;
-        fs2 << x << "," << GetPressure(x) << "," << GetDensity(x) << "," << GetVelocity(x) << "," << GetInternalEnergy(x) << "\n";
-    }
-
+    #if defined(Shocktube)
+        for(int i = 0;i<data.number;++i)
+            fs << data.position[i][0] << "," << data.pressure[i] << "," << data.density[i] << "," << data.velocity[i][0] << "," << data.internalEnergy[i] << "\n";
+    #elif defined(ShockTube2D)
+        for(int x = 0;x<x_num;++x)
+            fs << data.position[(y_num/2)*x_num+x][0] << "," << data.pressure[(y_num/2)*x_num+x] << "," << data.density[(y_num/2)*x_num+x] << "," << data.velocity[(y_num/2)*x_num+x][0] << "," << data.internalEnergy[(y_num/2)*x_num+x] << "\n";
+    #endif
 }

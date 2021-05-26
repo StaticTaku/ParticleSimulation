@@ -130,7 +130,7 @@ namespace TheoreticalData
                 return pres_L;
             if(-0.1674724 < x && x <= -0.0099465)
             {
-                return pres_L*pow(abs(x/t - GetVelocity(x))/c_L,2*heatCapRatio/(heatCapRatio-1));
+                return pres_L*std::pow(std::abs(x/t - GetVelocity(x))/c_L,2*heatCapRatio/(heatCapRatio-1));
             }
             if(-0.0099465 < x && x <= 0.2480001)
             {
@@ -160,7 +160,7 @@ namespace TheoreticalData
             }
             if(0.2480001 < x)
             {
-                return vel_R;
+                return dens_R;
             }
         }
 
