@@ -33,7 +33,7 @@ public:
             int i,j,k;
     #pragma omp for
             for(i = 0;i<data.number;++i)
-            {
+            {    
                 pi = data.pressure[i];
                 densi = data.density[i];
                 hi = data.h;

@@ -10,15 +10,15 @@ inline void SetShockTube1D(real dens_L,real pres_L,real vel_L,real dens_R,real p
         data.pressure[i] = pres_L;
         data.velocity[i][0] = vel_L;
         data.position[i][0] = -length/2+length*real(i)/data.number;
-        data.mass[i] = 0.01*dens_L;
+        data.mass[i] = mass_coef*dens_L;
     }
-
+    
     for(int i = data.number/2;i<data.number;++i)
     {
         data.pressure[i] = pres_R;
         data.velocity[i][0] = vel_R;
         data.position[i][0] = -length/2+length*real(i)/data.number;
-        data.mass[i] = 0.01*dens_R;
+        data.mass[i] = mass_coef*dens_R;
     }
 
     for(int i = 0;i<data.number;++i)
@@ -28,23 +28,8 @@ inline void SetShockTube1D(real dens_L,real pres_L,real vel_L,real dens_R,real p
             data.density[i] += data.mass[j]*data.kernelW(data.position[i],data.position[j],data.h);
     }
 
-    real savedDens_L = data.density[data.number/4];
-    real savedDens_R = data.density[3*data.number/4];
-
-    for(int i = 0;i<data.number/2;++i)
-    {
-        data.density[i] = data.density[i]/savedDens_L * dens_L;
-        data.mass[i] = data.mass[i]/savedDens_L * dens_L;
-    }
-
-    for(int i = data.number/2;i<data.number;++i)
-    {
-        data.density[i] = data.density[i]/savedDens_R * dens_R;
-        data.mass[i] = data.mass[i]/savedDens_R * dens_R;
-    }
     for(int i = 0;i<data.number;++i)
         data.internalEnergy[i] = data.pressure[i]/((data.heatCapRatio-1)*data.density[i]); 
-     
 }
 
 inline void SetShockTube2D(real dens_L,real pres_L,real vel_L,real dens_R,real pres_R,real vel_R,real x_length,real y_length, int x_num, int y_num,SphDataWithGamma& data)
@@ -68,7 +53,7 @@ inline void SetShockTube2D(real dens_L,real pres_L,real vel_L,real dens_R,real p
             data.velocity[id][1] = 0;
 
             data.pressure[id] = pres_L;
-            data.mass[id] = 0.01*dens_L;
+            data.mass[id] = mass_coef*dens_L;
         }
         for(int x = x_num/2;x < x_num; ++x)
         {
@@ -80,7 +65,7 @@ inline void SetShockTube2D(real dens_L,real pres_L,real vel_L,real dens_R,real p
             data.velocity[id][1] = 0;
 
             data.pressure[id] = pres_R;
-            data.mass[id] = 0.01*dens_R;
+            data.mass[id] = mass_coef*dens_R;
         }
     }
 
@@ -90,29 +75,12 @@ inline void SetShockTube2D(real dens_L,real pres_L,real vel_L,real dens_R,real p
         for(int j = 0;j<data.number;++j)
             data.density[i] += data.mass[j]*data.kernelW(data.position[i],data.position[j],data.h);
     }
-
-    real savedDens_L = data.density[y_num/2*x_num + x_num/4];
-    real savedDens_R = data.density[y_num/2*x_num + 3*x_num/4];
-
-    for(int y = 0;y < y_num; ++y)
-    {
-        for(int x = 0;x < x_num/2;++x)
-        {
-            data.density[x] = data.density[x]/savedDens_L * dens_L;
-            data.mass[x] = data.mass[x]/savedDens_L * dens_L;
-        }
-        for(int x = x_num/2;x < x_num; ++x)
-        {
-            data.density[x] = data.density[x]/savedDens_R * dens_R;
-            data.mass[x] = data.mass[x]/savedDens_R * dens_R;
-        }
-    }
-
+    
     for(int i = 0;i<data.number;++i)
         data.internalEnergy[i] = data.pressure[i]/((data.heatCapRatio-1)*data.density[i]);
 }
 
-inline void SetShockTube3D(real dens_L,real pres_L,real vel_L,real dens_R,real pres_R,real vel_R,real x_length,real y_length, real z_length, int x_num, int y_num, int z_num, SphDataWithGamma& data)
+/*inline void SetShockTube3D(real dens_L,real pres_L,real vel_L,real dens_R,real pres_R,real vel_R,real x_length,real y_length, real z_length, int x_num, int y_num, int z_num, SphDataWithGamma& data)
 {
     if(x_num*y_num*z_num != data.number)
     {
@@ -185,4 +153,4 @@ inline void SetShockTube3D(real dens_L,real pres_L,real vel_L,real dens_R,real p
     }
     for(int i = 0;i<data.number;++i)
         data.internalEnergy[i] = data.pressure[i]/((data.heatCapRatio-1)*data.density[i]);
-}
+}*/
