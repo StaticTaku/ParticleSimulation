@@ -1,5 +1,4 @@
 #pragma once
-
 #include <Settings.hpp>
 #include <PhysicsValue/CoreData.hpp>
 #include <omp.h>
