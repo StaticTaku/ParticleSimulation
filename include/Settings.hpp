@@ -68,6 +68,23 @@ using real = double;
     constexpr real x_length = 2;//衝撃波管のx軸方向の長さ
     constexpr real y_length = 2;//衝撃波間のy軸方向の長さ
 
+#elif defined(_ShockTube)
+    using real = double;
+    constexpr short DIM = 1;
+    constexpr int N = 200;
+    constexpr real alpha = 1;
+    constexpr real heatCapRatio = 1.4; //気体の比熱
+
+    constexpr double dens_L = 1.0; //衝撃波管の左側気体の密度
+    constexpr double vel_L = 0.2; //衝撃波管の左側気体の速度
+    constexpr double pres_L = 1.0; //衝撃波管の左側気体の圧力
+
+    constexpr double dens_R = 0; //衝撃波の右側気体の速度
+    constexpr double pres_R = 0;//衝撃波管管の右側気体の密度
+    constexpr double vel_R = 0.0; //衝撃波管の右側気体の圧力
+    
+    constexpr real length = 2;
+
 #elif defined(WaterDam)
     using real = double;
     constexpr short DIM = 2;
