@@ -6,26 +6,25 @@
 struct FluidResult:public CoreResult
 {
     real _internalEnergyDif[N];
-    real predictedInternalEnergy[N];
-    real _pastInternalEnergyDif[N];
+    real max_ui[N]; //for timestepDicider
 
     real *internalEnergyDif;
-    real *pastInternalEnergyDif;
 
-    FluidResult():internalEnergyDif(_internalEnergyDif),pastInternalEnergyDif(_pastInternalEnergyDif) {}
+    FluidResult():internalEnergyDif(_internalEnergyDif) 
+    {
+        for(int i = 0;i<N;++i)
+            max_ui[i] = 0;
+    }
 
-    void ClearAccelAndIEDif(int number)
+    void ClearIEDif(int number)
     {
         #pragma omp parallel
         {
         #pragma omp for
             for(int i = 0;i<number;++i)
             {
-                for(int d = 0;d<DIM;++d)
-                {
-                    accel[i][d] = 0;
-                }
                 internalEnergyDif[i] = 0;
+                max_ui[i] = 0;
             }
         }
     }

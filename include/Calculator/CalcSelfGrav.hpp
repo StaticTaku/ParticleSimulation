@@ -19,8 +19,6 @@ public:
 	#pragma omp for
 			for (i = 0; i < data.number; ++i)
 			{
-				data.potential[i] = 0;
-
 				for (j = 0; j < DIM; ++j)
 				{
 					_accel[j] = 0;
@@ -52,7 +50,7 @@ public:
 				}
 
 				for (j = 0; j < DIM; ++j)
-					result.accel[i][j] += _accel[j];
+					data.accel[i][j] += _accel[j];
 			}
 
 	#pragma omp barrier

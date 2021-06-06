@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 #include <Settings.hpp>
 #include <CalculatedResult/CoreResult.hpp>
 
