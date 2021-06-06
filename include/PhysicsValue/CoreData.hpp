@@ -6,9 +6,10 @@ struct CoreData
     int number;
     real position[N][DIM];
     real velocity[N][DIM];
+    real actualVelocity[N][DIM];
     real _accel[N][DIM];
-    real mass[N];
     real (*accel)[DIM];
+    real mass[N];
     real potential[N];
 
     CoreData(int num):number(num),accel(_accel) {}

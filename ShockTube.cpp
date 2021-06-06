@@ -41,11 +41,6 @@ int main()
         return 1;
     #endif
 
-    /*for(int i = 0;i<data.number;++i)
-        fs << data.position[i][0] << "," << data.pressure[i] << "," << data.density[i] << "," << data.velocity[i][0] << "," << data.internalEnergy[i] << "\n";
-    return 0;*/
-
-    data.h = h;
 
     result.ClearAccelAndIEDif(data.number);
     CalcFluid(data,result); //現時点でのaccel,internalEnergyDifを求める
@@ -66,13 +61,31 @@ int main()
         t += dt;//時間をdt進める
 
         //この時点でdata構造体に格納されているデータはすべてdtだけ前のデータ
+        /*fluidAdvancer.PredictVelocity(data,result,dt);
+        fluidAdvancer.HalfUpdateVelocity(data,result,dt);
+        fluidAdvancer.UpdatePosition(data,result,dt);
+        fluidAdvancer.PredictInternalEnergy(data,result,dt);
+        fluidAdvancer.HalfUpdateInternalEnergy(data,result,dt);
+        
+        fluidAdvancer.UpdateDensity(data,result);
+        fluidAdvancer.UpdatePressure(data,result,dt);
+
+        result.ClearAccelAndIEDif(data.number);
+        CalcFluid(data,result);//現在の内部エネルギーの時間微分(result.internalEnergyDif)と加速度(result.accel)を求める
+        std::swap(data.accel,result.accel);//初期時刻におけるsph粒子のaccelをdata構造体に設定
+
+        fluidAdvancer.HalfUpdateVelocity(data,result,dt);
+        fluidAdvancer.HalfUpdateInternalEnergy(data,result,dt);*/
+        
         //dt/2後の速度を求める
+
         //位置をdtすすめる
         //dt後の速度を求める
         //dt/2後の内部エネルギーを求める。
         //dt後の内部エネルギーをもとる
         fluidAdvancer.UpdatePosition(data,result,dt); //現在のpositionを求める
         fluidAdvancer.UpdateDensity(data,result); //現在のdensityを求める
+        fluidAdvancer.PredictVelocity(data,result,dt);
         fluidAdvancer.PredictInternalEnergyAndPressure(data,result,dt); //暫定的に現在のpressureを求める
 
         //std::swap(result.internalEnergyDif,result.pastInternalEnergyDif);//dt前の内部エネルギーの時間微分が格納されている(internalEnergyDifに格納されている)をpastInternalEnergyDifへ移動
@@ -82,15 +95,15 @@ int main()
 
         fluidAdvancer.UpdateInternalEnergyAndPressure(data,result,dt);//現在のinternalEnergyとpressureを求める
         fluidAdvancer.UpdateVelocity(data,result,dt); //現在のvelocityを求める
-        std::swap(data.accel,result.accel); //現時点での加速度(result.accel)をdata.accelに移動
+        std::swap(data.accel,result.accel); //現時点での加速度(result.accel)をdata.accelに移動*/
 
-        //この時点でdata構造体に格納されている物理量はすべて最新の状態に
+        //この時点でdata構造体に格納されている物理量はすべて最新の状態に*/
 
         cout << t << "\n";
     }
 
     for(int i = 0;i<data.number;++i)
-        fs << data.position[i][0] << "," << data.pressure[i] << "," << data.density[i] << "," << data.velocity[i][0] << "," << data.internalEnergy[i] << "\n";
+        fs << data.position[i][0] << "," << data.pressure[i] << "," << data.density[i] << "," << data.velocity[i][0] << "," << data.actualInternalEnergy[i] << "\n";
     #if defined(Shocktube1D)
         for(int i = 0;i<data.number;++i)
             fs << data.position[i][0] << "," << data.pressure[i] << "," << data.density[i] << "," << data.velocity[i][0] << "," << data.internalEnergy[i] << "\n";

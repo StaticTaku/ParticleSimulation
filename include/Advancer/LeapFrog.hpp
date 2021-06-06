@@ -4,20 +4,33 @@
 #include <CalculatedResult/CoreResult.hpp>
 #include <utility>
 
-class VelocityVerlet
+class LeapFrog
 {
     /*
     initial state:v(t), x(t)
         t += dt
+        get v(t+dt/2) by HalfUpdataVelocity
         get x(t+dt) by UpdatePosition
         get a(t+dt) by Calculator
-        get v(t+dt) by UpdateVelocity
+        get v(t+dt) by HalfUpdateVelocity
     then get state:v(t+dt),x(t+dt)
     */
 public:
-    real _pastAccel[N][DIM];
-    real (*pastAccel)[DIM];
-
+    void HalfUpdateVelocity(CoreData& data, const CoreResult& result, real dt)
+    {
+    #pragma omp parallel
+        {
+            int i, j;
+    #pragma omp for
+            for (i = 0; i < data.number; ++i)
+            {
+                for (j = 0; j < DIM; ++j)
+                    data.velocity[i][j] += data.accel[i][j]*dt/2.0;
+            }
+        }
+    #pragma omp barrier
+    }
+    
     void UpdatePosition(CoreData& data, const CoreResult& result, real dt)
     {
     #pragma omp parallel
@@ -27,24 +40,7 @@ public:
             for (i = 0; i < data.number; ++i)
             {
                 for (j = 0; j < DIM; ++j)
-                    data.position[i][j] += (data.velocity[i][j] + 0.5 * data.accel[i][j] * dt )* dt;
-            }
-        }
-    #pragma omp barrier
-    }
-
-    void UpdateVelocity(CoreData& data, CoreResult& result, real dt)
-    {
-    #pragma omp parallel
-        {
-            int i, j;
-    #pragma omp for
-            for (i = 0; i < data.number; ++i)
-            {
-                for (j = 0; j < DIM; ++j)
-                {
-                    data.velocity[i][j] += 0.5 * (data.accel[i][j] + result.accel[i][j]) * dt;
-                }
+                    data.position[i][j] += data.velocity[i][j]*dt;
             }
         }
     #pragma omp barrier

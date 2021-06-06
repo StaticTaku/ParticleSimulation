@@ -6,10 +6,11 @@
 #include <CalculatedResult/FluidResult.hpp>
 #include <CalculatedResult/CpiCoreResult.hpp>
 #include <Advancer/VelocityVerlet.hpp>
+#include <Advancer/LeapFrog.hpp>
 
 namespace SPH
 {
-    class FluidValueAdvancer:public VelocityVerlet
+    class FluidValueAdvancer_VelocityVerlet:public VelocityVerlet
     {
     public:
         void UpdatePosition(SphCoreDataWithFixedH& data, const CoreResult& result, real dt)
@@ -21,7 +22,22 @@ namespace SPH
                 for (i = 0; i < data.number; ++i)
                 {
                     for (j = 0; j < DIM; ++j)
-                        data.position[i][j] += (data.velocity[i][j] + 0.5 * data.accel[i][j] * dt )* dt;
+                        data.position[i][j] += (data.actualVelocity[i][j] + 0.5 * data.accel[i][j] * dt )* dt;
+                }
+            }
+        #pragma omp barrier
+        }
+
+        void PredictVelocity(SphCoreDataWithFixedH& data, const CoreResult& result, real dt)
+        {
+        #pragma omp parallel
+            {
+                int i, j;
+        #pragma omp for
+                for (i = 0; i < data.number; ++i)
+                {
+                    for (j = 0; j < DIM; ++j)
+                        data.velocity[i][j] = data.actualVelocity[i][j] + data.accel[i][j] * dt;
                 }
             }
         #pragma omp barrier
@@ -37,7 +53,7 @@ namespace SPH
                 {
                     for (j = 0; j < DIM; ++j)
                     {
-                        data.velocity[i][j] += 0.5 * (data.accel[i][j] + result.accel[i][j]) * dt;
+                        data.actualVelocity[i][j] += 0.5 * (data.accel[i][j] + result.accel[i][j]) * dt;
                     }
                 }
             }
@@ -68,8 +84,8 @@ namespace SPH
         #pragma omp for
                 for(int i = 0;i<data.number;++i)
                 {
-                    predictedInternalEnergy = data.internalEnergy[i] + result.internalEnergyDif[i] * dt;
-                    data.pressure[i] = predictedInternalEnergy*(heatCapRatio_1*data.density[i]);
+                    data.internalEnergy[i] = data.actualInternalEnergy[i] + result.internalEnergyDif[i] * dt;
+                    data.pressure[i] = data.internalEnergy[i]*(heatCapRatio_1*data.density[i]);
                 }
             }
         }
@@ -82,11 +98,114 @@ namespace SPH
         #pragma omp for
                 for(int i = 0;i<data.number;++i)
                 {
-                    data.internalEnergy[i] += 0.5 * (result.internalEnergyDif[i] + result.pastInternalEnergyDif[i]) * dt;//修正オイラー法
-                    data.pressure[i] = data.internalEnergy[i]*(heatCapRatio_1*data.density[i]);
+                    data.actualInternalEnergy[i] += 0.5 * (result.internalEnergyDif[i] + result.pastInternalEnergyDif[i]) * dt;//修正オイラー法
+                    data.pressure[i] = data.actualInternalEnergy[i]*(heatCapRatio_1*data.density[i]);
                 }
             }
         }
+
+    };
+
+    class FluidValueAdvancer_LeapFrog:LeapFrog
+    {
+    public:
+        void PredictVelocity(SphCoreDataWithFixedH& data, CoreResult& result, real dt)
+        {
+        #pragma omp parallel
+            {
+                int i,j;
+        #pragma omp for
+                for(i = 0;i<data.number;++i)
+                {
+                    for(j = 0; j<DIM;++j)
+                        data.velocity[i][j] = data.actualVelocity[i][j] + data.accel[i][j]*dt;
+                }
+            }            
+        }
+
+        void HalfUpdateVelocity(CoreData& data, const CoreResult& result, real dt)
+        {
+        #pragma omp parallel
+            {
+                int i, j;
+        #pragma omp for
+                for (i = 0; i < data.number; ++i)
+                {
+                    for (j = 0; j < DIM; ++j)
+                        data.actualVelocity[i][j] += data.accel[i][j]*dt/2.0;
+                }
+            }
+        #pragma omp barrier
+        }
+
+        void UpdatePosition(CoreData& data, const CoreResult& result, real dt)
+        {
+        #pragma omp parallel
+            {
+                int i, j;
+        #pragma omp for
+                for (i = 0; i < data.number; ++i)
+                {
+                    for (j = 0; j < DIM; ++j)
+                        data.position[i][j] += data.actualVelocity[i][j]*dt;
+                }
+            }
+        #pragma omp barrier
+        }
+
+
+        void PredictInternalEnergy(SphCoreDataWithFixedH& data, FluidResult& result, real dt)
+        {
+        #pragma omp parallel
+            {
+                int i,j;
+        #pragma omp for
+                for(i = 0;i<data.number;++i)
+                {
+                    data.internalEnergy[i] = data.actualInternalEnergy[i] + result.internalEnergyDif[i]*dt;
+                }
+            }            
+
+        }
+        void HalfUpdateInternalEnergy(SphCoreDataWithFixedH& data, FluidResult& result, real dt)
+        {
+        #pragma omp parallel
+            {
+                int i,j;
+        #pragma omp for
+                for(i = 0;i<data.number;++i)
+                {
+                    data.actualInternalEnergy[i] +=  result.internalEnergyDif[i]*dt/2;
+                }
+            }            
+        }
+
+        void UpdateDensity(SphCoreDataWithFixedH& data, const FluidResult& result)
+        {
+        #pragma omp parallel
+            {
+                real h = data.h;
+        #pragma omp for
+                for(int i = 0;i<data.number;++i)
+                {
+                    data.density[i] = 0;
+                    for(int j = 0;j<data.number;++j)
+                        data.density[i] += data.mass[j]*data.kernelW(data.position[i],data.position[j],h);
+                }
+            }
+        }
+
+        void UpdatePressure(SphDataWithGamma& data, const FluidResult& result, real dt)
+        {
+        #pragma omp parallel
+            {
+                real heatCapRatio_1 = data.heatCapRatio-1;
+        #pragma omp for
+                for(int i = 0;i<data.number;++i)
+                    data.pressure[i] = data.internalEnergy[i]*(heatCapRatio_1*data.density[i]);
+            }
+        }
+
 
     };
 }

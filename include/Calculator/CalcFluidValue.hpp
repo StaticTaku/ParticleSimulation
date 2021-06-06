@@ -12,10 +12,8 @@ namespace SPH
     class CalcFluidValue
     {
     public:
-        real alpha = 0.5; //人口粘性の強さを決める係数
-        real beta = 2*alpha; //人口粘性の強さを決める係数
 
-        CalcFluidValue(real _alpha, real _beta):alpha(_alpha),beta(_beta) {}
+        CalcFluidValue(real _alpha, real _beta) {}
         void operator()(const SphDataWithGamma& data, FluidResult& result)
         {
         #pragma omp parallel
@@ -37,7 +35,9 @@ namespace SPH
                 int i,j,k;
         #pragma omp for
                 for(i = 0;i<data.number;++i)
-                {    
+                {
+                    result.accel[i][0] = 0;
+                    result.internalEnergyDif[i] = 0;
                     pi = data.pressure[i];
                     densi = data.density[i];
                     hi = data.h;
@@ -52,6 +52,8 @@ namespace SPH
                     
                     for(j = 0;j<data.number;++j)
                     {
+                        if(i==j)
+                            continue;
                         pj = data.pressure[j];
                         densj = data.density[j];
                         hj = data.h;
@@ -72,22 +74,21 @@ namespace SPH
                             accel[k] += (-data.mass[j]*(pi/(densi*densi)*grad_Wij_hi[k]+pj/(densj*densj)*grad_Wij_hj[k]));
                             _internalEnergyDif += (data.velocity[i][k]-data.velocity[j][k])*grad_Wij_hi[k];
                         }
-                        result.internalEnergyDif[i] += pi/densi*data.mass[j]*_internalEnergyDif;
+                        result.internalEnergyDif[i] += 0.5*data.mass[j]*(pi/(densi*densi) + pj/(densj*densj))*_internalEnergyDif;
 
                         
                         //人口粘性による追加の加速度と内部エネルギーの微分の値
-                        pi_ij = PI_ij(pos_i,pos_j,vel_i,vel_j,densi,densj,hi,hj,pi,pj,data.heatCapRatio);
+                        pi_ij = PI_ij(i,j,data,result);
 
-                        if(!(abs(pi_ij) <= ZERO))
+
+                        _internalEnergyDif = 0;
+                        for(k = 0;k<DIM;++k)
                         {
-                            _internalEnergyDif = 0;
-                            for(k = 0;k<DIM;++k)
-                            {
-                                _internalEnergyDif += (vel_i[k]-vel_j[k])*(grad_Wij_hi[k]+grad_Wij_hj[k]);
-                                accel[k] += (-data.mass[j]*pi_ij*(grad_Wij_hi[k]+grad_Wij_hj[k])/2.0);
-                            }
-                            result.internalEnergyDif[i] += 0.5*data.mass[j]*pi_ij*0.5*_internalEnergyDif;
+                            _internalEnergyDif += (vel_i[k]-vel_j[k])*(grad_Wij_hi[k]+grad_Wij_hj[k]);
+                            accel[k] += (-data.mass[j]*pi_ij*(grad_Wij_hi[k]+grad_Wij_hj[k])/2.0);
                         }
+                        result.internalEnergyDif[i] += 0.5*data.mass[j]*pi_ij*0.5*_internalEnergyDif;
+
                     }
                     for(k = 0;k<DIM;++k)
                         result.accel[i][k] += accel[k];
@@ -97,7 +98,7 @@ namespace SPH
             }    
         }
 
-        double PI_ij(double* ri,double* rj,double* vi,double* vj,double densi, double densj, double hi, double hj, double presi, double presj, double heatCapRatio)
+        double PI_ij(int i,int j,const SphDataWithGamma& data,FluidResult& result)
         {
             real rij[DIM];
             real vij[DIM];
@@ -105,8 +106,8 @@ namespace SPH
 
             for(int d = 0;d<DIM;++d)
             {
-                rij[d] = (ri[d]-rj[d]);
-                vij[d] = (vi[d]-vj[d]);
+                rij[d] = (data.position[i][d]-data.position[j][d]);
+                vij[d] = (data.velocity[i][d]-data.velocity[j][d]);
                 rij_dot_vij += rij[d]*vij[d];
             }
             if(rij_dot_vij >= 0)
@@ -114,9 +115,9 @@ namespace SPH
                 return 0;
             }
 
-            double hij = (hi + hj)/2.0;
-            double densij = (densi + densj)/2.0;
-            double cij = (sqrt(heatCapRatio*presi/densi)+sqrt(heatCapRatio*presj/densj))/2.0;
+            double hij = (data.h + data.h)/2.0;
+            double densij = (data.density[i] + data.density[j])/2.0;
+            double cij = (sqrt(heatCapRatio*data.pressure[i]/data.density[i])+sqrt(heatCapRatio*data.pressure[j]/data.density[j]))/2.0;
             
             double _uij = 0;
             for(int d = 0;d<DIM;++d)
@@ -125,9 +126,11 @@ namespace SPH
             }
             
             double uij = hij*rij_dot_vij/(_uij+eta*hij*hij);
+
+            result.max_ui[i] = std::max(result.max_ui[i],uij);
             
-            return (-alpha*cij*uij+beta*uij*uij)/densij;
-        }   
+            return (-alpha*cij*uij+cbeta*uij*uij)/densij;
+        }
     };
 }
 
