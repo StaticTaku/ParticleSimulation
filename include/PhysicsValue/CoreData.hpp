@@ -6,7 +6,6 @@ struct CoreData
     int number;
     real position[N][DIM];
     real velocity[N][DIM];
-    real actualVelocity[N][DIM];
     real _accel[N][DIM];
     real (*accel)[DIM];
     real mass[N];
@@ -21,6 +20,19 @@ struct CoreData
     #pragma omp for
             for(int i = 0;i<number;++i)
                 potential[i] = 0;
+        }
+    }
+
+    void ClearAccel()
+    {
+    #pragma omp parallel
+        {
+    #pragma once
+            for(int i = 0;i<number;++i)
+            {
+                for(int d = 0;d<DIM;++d)
+                    accel[i][d] = 0;
+            }
         }
     }
 

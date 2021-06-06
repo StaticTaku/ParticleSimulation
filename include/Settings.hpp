@@ -12,7 +12,6 @@ using real = double;
     constexpr real R = 1; //プラマーモデルの半径
     constexpr real Mass = 1; //プラマーモデルの総質量
     constexpr real dt = 0.01; //時間の刻み幅(可変にしたければ適宜メインファイルで)
-    
 #elif defined(ShockTube1D) //SPH法で実装
     using real = double;
     constexpr short DIM = 1; //次元

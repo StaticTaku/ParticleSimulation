@@ -1,5 +1,6 @@
 #pragma once
 #include <Settings.hpp>
+#include <utility>
 #include <PhysicsValue/SphDataWithGamma.hpp>
 #include <PhysicsValue/CpiData.hpp>
 #include <PhysicsValue/SphCoreData.hpp>
@@ -8,207 +9,258 @@
 #include <Advancer/VelocityVerlet.hpp>
 #include <Advancer/LeapFrog.hpp>
 
+#if defined(SphMethod) 
 namespace SPH
 {
-    class FluidValueAdvancer_VelocityVerlet:public VelocityVerlet
+    #if defined(VelocityVerletMethod)
+    namespace VelocityVerlet
     {
-    public:
-        void UpdatePosition(SphCoreDataWithFixedH& data, const CoreResult& result, real dt)
+        class FluidValueAdvancer:public VelocityVerlet
         {
-        #pragma omp parallel
+        public:
+            FluidValueAdvancer():actualVelocity(_actualVelocity),actualInternalEnergy(_actualInternalEnergy),pastInternalEnergyDif(_pastInternalEnergyDif),pastAccel(_pastAccel) {}
+            real _actualVelocity[N][DIM];
+            real (*actualVelocity)[DIM];
+
+            real _actualInternalEnergy[N];
+            real (*actualInternalEnergy);
+
+            real _pastInternalEnergyDif[N];
+            real (*pastInternalEnergyDif);
+
+            real _pastAccel[N][DIM];
+            real (*pastAccel)[DIM];
+
+            void SetActual(SphCoreDataWithFixedH& data)
             {
-                int i, j;
-        #pragma omp for
-                for (i = 0; i < data.number; ++i)
+                for(int i = 0;i<data.number;++i)
                 {
-                    for (j = 0; j < DIM; ++j)
-                        data.position[i][j] += (data.actualVelocity[i][j] + 0.5 * data.accel[i][j] * dt )* dt;
+                    for(int d = 0;d<DIM;++d)
+                        actualVelocity[i][d] = data.velocity[i][d];
+                    actualInternalEnergy[i] = data.internalEnergy[i];
                 }
             }
-        #pragma omp barrier
-        }
 
-        void PredictVelocity(SphCoreDataWithFixedH& data, const CoreResult& result, real dt)
-        {
-        #pragma omp parallel
+            void UpdatePosition(SphCoreDataWithFixedH& data, const CoreResult& result, real dt)
             {
-                int i, j;
-        #pragma omp for
-                for (i = 0; i < data.number; ++i)
+            #pragma omp parallel
                 {
-                    for (j = 0; j < DIM; ++j)
-                        data.velocity[i][j] = data.actualVelocity[i][j] + data.accel[i][j] * dt;
-                }
-            }
-        #pragma omp barrier
-        }
-
-        void UpdateVelocity(SphCoreDataWithFixedH& data, CoreResult& result, real dt)
-        {
-        #pragma omp parallel
-            {
-                int i, j;
-        #pragma omp for
-                for (i = 0; i < data.number; ++i)
-                {
-                    for (j = 0; j < DIM; ++j)
+                    int i, j;
+            #pragma omp for
+                    for (i = 0; i < data.number; ++i)
                     {
-                        data.actualVelocity[i][j] += 0.5 * (data.accel[i][j] + result.accel[i][j]) * dt;
+                        for (j = 0; j < DIM; ++j)
+                            data.position[i][j] += (actualVelocity[i][j] + 0.5 * data.accel[i][j] * dt )* dt;
+                    }
+                }
+            #pragma omp barrier
+            }
+
+            void PredictVelocity(SphCoreDataWithFixedH& data, const CoreResult& result, real dt)
+            {
+            #pragma omp parallel
+                {
+                    int i, j;
+            #pragma omp for
+                    for (i = 0; i < data.number; ++i)
+                    {
+                        for (j = 0; j < DIM; ++j)
+                            data.velocity[i][j] = actualVelocity[i][j] + data.accel[i][j] * dt;
+                    }
+                }
+            #pragma omp barrier
+            }
+
+            void UpdateVelocity(SphCoreDataWithFixedH& data, CoreResult& result, real dt)
+            {
+            #pragma omp parallel
+                {
+                    int i, j;
+            #pragma omp for
+                    for (i = 0; i < data.number; ++i)
+                    {
+                        for (j = 0; j < DIM; ++j)
+                        {
+                            actualVelocity[i][j] += 0.5 * (data.accel[i][j] + pastAccel[i][j]) * dt;
+                        }
+                    }
+                }
+            #pragma omp barrier
+            }
+            
+            void UpdateDensity(SphCoreDataWithFixedH& data, const FluidResult& result)
+            {
+            #pragma omp parallel
+                {
+                    real h = data.h;
+            #pragma omp for
+                    for(int i = 0;i<data.number;++i)
+                    {
+                        data.density[i] = 0;
+                        for(int j = 0;j<data.number;++j)
+                            data.density[i] += data.mass[j]*data.kernelW(data.position[i],data.position[j],h);
                     }
                 }
             }
-        #pragma omp barrier
-        }
-        
-        void UpdateDensity(SphCoreDataWithFixedH& data, const FluidResult& result)
-        {
-        #pragma omp parallel
+
+            void PredictInternalEnergyAndPressure(SphDataWithGamma& data, const FluidResult& result, real dt)
             {
-                real h = data.h;
-        #pragma omp for
-                for(int i = 0;i<data.number;++i)
+            #pragma omp parallel
                 {
-                    data.density[i] = 0;
-                    for(int j = 0;j<data.number;++j)
-                        data.density[i] += data.mass[j]*data.kernelW(data.position[i],data.position[j],h);
+                    real heatCapRatio_1 = data.heatCapRatio-1;
+            #pragma omp for
+                    for(int i = 0;i<data.number;++i)
+                    {
+                        data.internalEnergy[i] = actualInternalEnergy[i] + pastInternalEnergyDif[i] * dt;
+                        data.pressure[i] = data.internalEnergy[i]*(heatCapRatio_1*data.density[i]);
+                    }
                 }
             }
-        }
 
-        void PredictInternalEnergyAndPressure(SphDataWithGamma& data, const FluidResult& result, real dt)
-        {
-        #pragma omp parallel
+            void UpdateInternalEnergyAndPressure(SphDataWithGamma& data, const FluidResult& result, real dt)
             {
-                real heatCapRatio_1 = data.heatCapRatio-1;
-                real predictedInternalEnergy;
-        #pragma omp for
-                for(int i = 0;i<data.number;++i)
+            #pragma omp parallel
                 {
-                    data.internalEnergy[i] = data.actualInternalEnergy[i] + result.internalEnergyDif[i] * dt;
-                    data.pressure[i] = data.internalEnergy[i]*(heatCapRatio_1*data.density[i]);
+                    real heatCapRatio_1 = data.heatCapRatio-1;
+            #pragma omp for
+                    for(int i = 0;i<data.number;++i)
+                    {
+                        actualInternalEnergy[i] += 0.5 * (result.internalEnergyDif[i] + pastInternalEnergyDif[i]) * dt;//修正オイラー法
+                        data.pressure[i] = actualInternalEnergy[i]*(heatCapRatio_1*data.density[i]);
+                    }
                 }
             }
-        }
 
-        void UpdateInternalEnergyAndPressure(SphDataWithGamma& data, const FluidResult& result, real dt)
-        {
-        #pragma omp parallel
-            {
-                real heatCapRatio_1 = data.heatCapRatio-1;
-        #pragma omp for
-                for(int i = 0;i<data.number;++i)
-                {
-                    data.actualInternalEnergy[i] += 0.5 * (result.internalEnergyDif[i] + result.pastInternalEnergyDif[i]) * dt;//修正オイラー法
-                    data.pressure[i] = data.actualInternalEnergy[i]*(heatCapRatio_1*data.density[i]);
-                }
-            }
-        }
+        };
+    }
 
-    };
-
-    class FluidValueAdvancer_LeapFrog:LeapFrog
+    #elif defind(LeapFrogMethod)
+    namespace LeapFrog
     {
-    public:
-        void PredictVelocity(SphCoreDataWithFixedH& data, CoreResult& result, real dt)
+        class FluidValueAdvancer:public LeapFrog
         {
-        #pragma omp parallel
-            {
-                int i,j;
-        #pragma omp for
-                for(i = 0;i<data.number;++i)
-                {
-                    for(j = 0; j<DIM;++j)
-                        data.velocity[i][j] = data.actualVelocity[i][j] + data.accel[i][j]*dt;
-                }
-            }            
-        }
+        public:
+            real _actualVelocity[N][DIM];
+            real (*actualVelocity)[DIM];//updated by dt/2
 
-        void HalfUpdateVelocity(CoreData& data, const CoreResult& result, real dt)
-        {
-        #pragma omp parallel
-            {
-                int i, j;
-        #pragma omp for
-                for (i = 0; i < data.number; ++i)
-                {
-                    for (j = 0; j < DIM; ++j)
-                        data.actualVelocity[i][j] += data.accel[i][j]*dt/2.0;
-                }
-            }
-        #pragma omp barrier
-        }
+            real _actualInternalEnergy[N];
+            real (*actualInternalEnergy);//updated by dt/2
 
-        void UpdatePosition(CoreData& data, const CoreResult& result, real dt)
-        {
-        #pragma omp parallel
-            {
-                int i, j;
-        #pragma omp for
-                for (i = 0; i < data.number; ++i)
-                {
-                    for (j = 0; j < DIM; ++j)
-                        data.position[i][j] += data.actualVelocity[i][j]*dt;
-                }
-            }
-        #pragma omp barrier
-        }
+            FluidValueAdvancer():actualVelocity(_actualVelocity),actualInternalEnergy(_actualInternalEnergy) {}
 
-
-        void PredictInternalEnergy(SphCoreDataWithFixedH& data, FluidResult& result, real dt)
-        {
-        #pragma omp parallel
+            void SetActual(const SphCoreDataWithFixedH& data)
             {
-                int i,j;
-        #pragma omp for
-                for(i = 0;i<data.number;++i)
-                {
-                    data.internalEnergy[i] = data.actualInternalEnergy[i] + result.internalEnergyDif[i]*dt;
-                }
-            }            
-
-        }
-        void HalfUpdateInternalEnergy(SphCoreDataWithFixedH& data, FluidResult& result, real dt)
-        {
-        #pragma omp parallel
-            {
-                int i,j;
-        #pragma omp for
-                for(i = 0;i<data.number;++i)
-                {
-                    data.actualInternalEnergy[i] +=  result.internalEnergyDif[i]*dt/2;
-                }
-            }            
-        }
-
-        void UpdateDensity(SphCoreDataWithFixedH& data, const FluidResult& result)
-        {
-        #pragma omp parallel
-            {
-                real h = data.h;
-        #pragma omp for
                 for(int i = 0;i<data.number;++i)
                 {
-                    data.density[i] = 0;
-                    for(int j = 0;j<data.number;++j)
-                        data.density[i] += data.mass[j]*data.kernelW(data.position[i],data.position[j],h);
+                    for(int d = 0;d<DIM;++d)
+                        actualVelocity[i][d] = data.velocity[i][d];
+                    actualInternalEnergy[i] = data.internalEnergy[i]; 
                 }
             }
-        }
 
-        void UpdatePressure(SphDataWithGamma& data, const FluidResult& result, real dt)
-        {
-        #pragma omp parallel
+            void PredictVelocity(SphCoreDataWithFixedH& data, CoreResult& result, real dt)
             {
-                real heatCapRatio_1 = data.heatCapRatio-1;
-        #pragma omp for
-                for(int i = 0;i<data.number;++i)
-                    data.pressure[i] = data.internalEnergy[i]*(heatCapRatio_1*data.density[i]);
+            #pragma omp parallel
+                {
+                    int i,j;
+            #pragma omp for
+                    for(i = 0;i<data.number;++i)
+                    {
+                        for(j = 0; j<DIM;++j)
+                            data.velocity[i][j] = actualVelocity[i][j] + data.accel[i][j]*dt;
+                    }
+                }            
             }
-        }
+
+            void HalfUpdateVelocity(CoreData& data, const CoreResult& result, real dt)
+            {
+            #pragma omp parallel
+                {
+                    int i, j;
+            #pragma omp for
+                    for (i = 0; i < data.number; ++i)
+                    {
+                        for (j = 0; j < DIM; ++j)
+                            actualVelocity[i][j] += data.accel[i][j]*dt/2.0;
+                    }
+                }
+            #pragma omp barrier
+            }
+
+            void UpdatePosition(CoreData& data, const CoreResult& result, real dt)
+            {
+            #pragma omp parallel
+                {
+                    int i, j;
+            #pragma omp for
+                    for (i = 0; i < data.number; ++i)
+                    {
+                        for (j = 0; j < DIM; ++j)
+                            data.position[i][j] += actualVelocity[i][j]*dt;
+                    }
+                }
+            #pragma omp barrier
+            }
 
 
-    };
+            void PredictInternalEnergy(SphCoreDataWithFixedH& data, FluidResult& result, real dt)
+            {
+            #pragma omp parallel
+                {
+                    int i,j;
+            #pragma omp for
+                    for(i = 0;i<data.number;++i)
+                    {
+                        data.internalEnergy[i] = actualInternalEnergy[i] + result.internalEnergyDif[i]*dt;
+                    }
+                }            
+
+            }
+            void HalfUpdateInternalEnergy(SphCoreDataWithFixedH& data, FluidResult& result, real dt)
+            {
+            #pragma omp parallel
+                {
+                    int i,j;
+            #pragma omp for
+                    for(i = 0;i<data.number;++i)
+                    {
+                        actualInternalEnergy[i] +=  result.internalEnergyDif[i]*dt/2;
+                    }
+                }            
+            }
+
+            void UpdateDensity(SphCoreDataWithFixedH& data, const FluidResult& result)
+            {
+            #pragma omp parallel
+                {
+                    real h = data.h;
+            #pragma omp for
+                    for(int i = 0;i<data.number;++i)
+                    {
+                        data.density[i] = 0;
+                        for(int j = 0;j<data.number;++j)
+                            data.density[i] += data.mass[j]*data.kernelW(data.position[i],data.position[j],h);
+                    }
+                }
+            }
+
+            void UpdatePressure(SphDataWithGamma& data, const FluidResult& result, real dt)
+            {
+            #pragma omp parallel
+                {
+                    real heatCapRatio_1 = data.heatCapRatio-1;
+            #pragma omp for
+                    for(int i = 0;i<data.number;++i)
+                        data.pressure[i] = data.internalEnergy[i]*(heatCapRatio_1*data.density[i]);
+                }
+            }
+
+
+        };
+    }
+    #endif
 }
+#endif
 
 namespace CIP
 {

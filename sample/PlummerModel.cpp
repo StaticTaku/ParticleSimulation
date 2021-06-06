@@ -22,11 +22,9 @@ int main()
 
     SetPlummerModel(seed,R,Mass,data); //初期条件を設定する。position,velocity,massを決定する
 
+    data.ClearAccel();
     data.ClearPotential();
-    result.ClearAccel(data.number); 
-
     calcSelfGrav(softParam,data,result); //現時点でのaccelを求める
-    std::swap(data.accel,result.accel);//初期時刻におけるsph粒子のaccelをdata構造体に設定
 
     real t = 0;
 
@@ -40,14 +38,14 @@ int main()
 
         //この時点でdata構造体に格納されているデータはすべてdtだけ前のデータ
 
+        std::swap(coreAdvancer.pastAccel,data.accel);
         coreAdvancer.UpdatePosition(data,result,dt); //現在のpositionを求める
-
+        
+        data.ClearAccel();
         data.ClearPotential();
-        result.ClearAccel(data.number); 
         calcSelfGrav(softParam,data,result); //現在の加速度(result.accelに格納)を求める
 
         coreAdvancer.UpdateVelocity(data,result,dt); //現在のvelocityを求める
-        std::swap(data.accel,result.accel); //現時点での加速度(result.accel)をdata.accelに移動
 
         //この時点でdata構造体に格納されているデータはすべて最新の状態に
         

@@ -6,15 +6,13 @@
 #include <CalculatedResult/FluidResult.hpp>
 #include <cmath>
 
-#if defined(ShockTube1D) || defined(ShockTube2D)
+#if defined(SphMethod)
 namespace SPH
 {
     class CalcFluidValue
     {
     public:
-
-        CalcFluidValue(real _alpha, real _beta) {}
-        void operator()(const SphDataWithGamma& data, FluidResult& result)
+        void operator()(SphDataWithGamma& data, FluidResult& result)
         {
         #pragma omp parallel
             {
@@ -32,12 +30,12 @@ namespace SPH
                 real _internalEnergyDif;
                 real pi_ij;
 
-                int i,j,k;
+                int i,j,k,d;
         #pragma omp for
                 for(i = 0;i<data.number;++i)
                 {
-                    result.accel[i][0] = 0;
-                    result.internalEnergyDif[i] = 0;
+                    result.max_ui[i] = 0;
+
                     pi = data.pressure[i];
                     densi = data.density[i];
                     hi = data.h;
@@ -91,7 +89,7 @@ namespace SPH
 
                     }
                     for(k = 0;k<DIM;++k)
-                        result.accel[i][k] += accel[k];
+                        data.accel[i][k] += accel[k];
                 }
 
         #pragma omp barrier

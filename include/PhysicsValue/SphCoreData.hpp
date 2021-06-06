@@ -8,7 +8,6 @@ struct SphCoreDataWithFixedH:public CoreData
     real density[N];
     real pressure[N];
     real internalEnergy[N];
-    real actualInternalEnergy[N];
     real h;
 
 	std::function<double(double*,double*,double)> kernelW; //カーネル関数

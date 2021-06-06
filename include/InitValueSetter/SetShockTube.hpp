@@ -9,13 +9,10 @@ namespace SPH
 {
     inline void SetShockTube1D(real dens_L,real pres_L,real vel_L,real dens_R,real pres_R,real vel_R,real length, SphDataWithGamma& data)
     {
-        real a,b,c,A,B,C;
-
         for(int i = 0;i<data.number/2;++i)
         {
             data.pressure[i] = pres_L;
             data.velocity[i][0] = vel_L;
-            data.actualVelocity[i][0] = vel_L;
             data.position[i][0] = -length/2+length*real(i)/data.number;
             data.mass[i] = mass_coef*dens_L;
         }
@@ -24,7 +21,6 @@ namespace SPH
         {
             data.pressure[i] = pres_R;
             data.velocity[i][0] = vel_R;
-            data.actualVelocity[i][0] = vel_R;
             data.position[i][0] = -length/2+length*real(i)/data.number;
             data.mass[i] = mass_coef*dens_R;
         }
@@ -34,12 +30,7 @@ namespace SPH
             data.density[i] = 0;
             for(int j = 0;j<data.number;++j)
                 data.density[i] += data.mass[j]*data.kernelW(data.position[i],data.position[j],data.h);
-        }
-
-        for(int i = 0;i<data.number;++i)
-        {
             data.internalEnergy[i] = data.pressure[i]/((data.heatCapRatio-1)*data.density[i]); 
-            data.actualInternalEnergy[i] = data.pressure[i]/((data.heatCapRatio-1)*data.density[i]); 
         }
     }
 
@@ -85,10 +76,8 @@ namespace SPH
             data.density[i] = 0;
             for(int j = 0;j<data.number;++j)
                 data.density[i] += data.mass[j]*data.kernelW(data.position[i],data.position[j],data.h);
-        }
-        
-        for(int i = 0;i<data.number;++i)
             data.internalEnergy[i] = data.pressure[i]/((data.heatCapRatio-1)*data.density[i]);
+        }
     }
 
     /*inline void SetShockTube3D(real dens_L,real pres_L,real vel_L,real dens_R,real pres_R,real vel_R,real x_length,real y_length, real z_length, int x_num, int y_num, int z_num, SphDataWithGamma& data)

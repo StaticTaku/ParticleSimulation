@@ -18,6 +18,8 @@ public:
     real _pastAccel[N][DIM];
     real (*pastAccel)[DIM];
 
+    VelocityVerlet():pastAccel(_pastAccel) {}
+
     void UpdatePosition(CoreData& data, const CoreResult& result, real dt)
     {
     #pragma omp parallel
@@ -43,7 +45,7 @@ public:
             {
                 for (j = 0; j < DIM; ++j)
                 {
-                    data.velocity[i][j] += 0.5 * (data.accel[i][j] + result.accel[i][j]) * dt;
+                    data.velocity[i][j] += 0.5 * (data.accel[i][j] + pastAccel[i][j]) * dt;
                 }
             }
         }
