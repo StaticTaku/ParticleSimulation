@@ -4,7 +4,7 @@
 #include <PhysicsValue/CoreGridData.hpp>
 #include <iostream>
 
-#if defined(ShockTube1D) || defined(ShockTube2D)
+#if defined(SphMethod)
 namespace SPH
 {
     inline void SetShockTube1D(real dens_L,real pres_L,real vel_L,real dens_R,real pres_R,real vel_R,real length, SphDataWithGamma& data)
@@ -156,7 +156,7 @@ namespace SPH
     }*/
 }
 
-#elif defined(_ShockTube)
+#elif defined(GodunovMethod)
 namespace Grid
 {
     inline real SetShockTube1D(real dens_L,real pres_L,real vel_L,real dens_R,real pres_R,real vel_R,real length,CoreGridData& data)
@@ -169,15 +169,14 @@ namespace Grid
         for(int i = 0;i<data.number/2 + 1;++i)
         {
             data.density[i] = dens_L;
-            data.pressure[i] = pres_L;
-            data.velocity[i][0] = vel_L;
+            data.momentum[i][0] = dens_L*vel_L;
+            data.energy[i] = pres_L/(heatCapRatio-1) + dens_L/2 * vel_L*vel_L;
         }
-
         for(int i = data.number/2 + 1;i<data.number;++i)
         {
             data.density[i] = dens_R;
-            data.pressure[i] = pres_R;
-            data.velocity[i][0] = vel_R;
+            data.momentum[i][0] = dens_R*vel_R;
+            data.energy[i] = pres_R/(heatCapRatio-1) + dens_R/2 * vel_R*vel_R;
         }
 
         return dx;

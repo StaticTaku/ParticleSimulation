@@ -2,8 +2,10 @@
 #include <cmath>
 #include <Settings.hpp>
 #include <PhysicsValue/SphDataWithGamma.hpp>
+#include <PhysicsValue/CoreGridData.hpp>
 #include <CalculatedResult/FluidResult.hpp>
 
+#if defined(SphMethod)
 inline real GetNextTimeStep(FluidResult& result,const SphDataWithGamma& data)
 {
     real delta_tf = 1e5;
@@ -35,3 +37,32 @@ inline real GetNextTimeStep(FluidResult& result,const SphDataWithGamma& data)
 
     return Ccfl*std::min(delta_tf,delta_tcv);
 }
+#elif defined(GodunovMethod)
+inline real GetNextTimeStep(real dx, const CoreGridData& data)
+{
+    real max_u_minus_c_and_u_plus_c = 1e-5;
+    real dt;
+#pragma omp parallel
+    {
+        real tempThread_max_u_minus_c_and_u_plus_c = 1e-5;
+        real ci;
+        real ui;
+        int i;
+#pragma omp for
+        for(i=0;i<data.number;++i)
+        {
+            ci = data.GetSpeedOfSound(i);
+            ui = data.GetVelocity(i,1);
+            tempThread_max_u_minus_c_and_u_plus_c = std::max(tempThread_max_u_minus_c_and_u_plus_c, std::abs(ui-ci));
+            tempThread_max_u_minus_c_and_u_plus_c = std::max(tempThread_max_u_minus_c_and_u_plus_c, std::abs(ui+ci));
+        }
+
+#pragma omp critical
+        {
+            max_u_minus_c_and_u_plus_c = std::max(max_u_minus_c_and_u_plus_c,tempThread_max_u_minus_c_and_u_plus_c);
+        }
+    }
+
+    return Ccfl*dx/max_u_minus_c_and_u_plus_c;
+}
+#endif

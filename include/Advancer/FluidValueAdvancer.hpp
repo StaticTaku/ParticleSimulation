@@ -2,12 +2,12 @@
 #include <Settings.hpp>
 #include <utility>
 #include <PhysicsValue/SphDataWithGamma.hpp>
-#include <PhysicsValue/CpiData.hpp>
 #include <PhysicsValue/SphCoreData.hpp>
 #include <CalculatedResult/FluidResult.hpp>
 #include <CalculatedResult/CpiCoreResult.hpp>
 #include <Advancer/VelocityVerlet.hpp>
 #include <Advancer/LeapFrog.hpp>
+#include <Utility/RiemanSolver.hpp>
 
 #if defined(SphMethod) 
 namespace SPH
@@ -134,7 +134,7 @@ namespace SPH
         };
     }
 
-    #elif defind(LeapFrogMethod)
+    #elif defined(LeapFrogMethod)
     namespace LeapFrog
     {
         class FluidValueAdvancer:public LeapFrog
@@ -260,64 +260,46 @@ namespace SPH
     }
     #endif
 }
-#endif
-
-namespace CIP
+#elif defined(GodunovMethod)
+namespace Godunov
 {
     class FluidValueAdvancer
     {
+    private:
+        RiemanSolver riemanSolver;
     public:
-        void UpdateVelocityDensityPressure(CpiData& data, const CpiCoreResult& result, real dt, real dx)
+        void UpdateDensity_Momentum_Energy(const real dx, const real dt, CoreGridData& data)
         {
         #pragma omp parallel
             {
-                int i, j;
+                real dens_vel_pres[3];
+                real Flux_i_minusHalf[3];
+                real Flux_i_plusHalf[3];
         #pragma omp for
-                for (i = 1; i < data.number-1; ++i)
+                for(int i = 1;i<data.number-1;++i)
                 {
-                    const real qi = VonNeumannArtificialViscosity(result.density[i],result.pressure[i],result.velocity_xDif[i][0],data.gamma,dx);
-                    const real qi_1 = VonNeumannArtificialViscosity(result.density[i+1],result.pressure[i+1],result.velocity_xDif[i+1][0],data.gamma,dx);
-                    for (j = 0; j < DIM; ++j)
-                    {
-                        data.velocity[i][j] = result.velocity[i][0] - 2/(result.density[i]+result.density[i+1]) * (data.pressure[i+1]+ qi_1 - result.pressure[i] - qi) * dt/dx;
-                    }
+                    riemanSolver.GetShockTubeAnswerAtZero(data.density[i-1],data.momentum[i-1][0]/data.density[i-1],(data.energy[i-1]-data.momentum[i-1][0]*data.momentum[i-1][0]/(2*data.density[i-1]))*(heatCapRatio-1)
+                                                        ,data.density[i],data.momentum[i][0]/data.density[i],(data.energy[i]-data.momentum[i][0]*data.momentum[i][0]/(2*data.density[i]))*(heatCapRatio-1)
+                                                        ,dens_vel_pres);
 
-                    data.density[i] = result.density[i] - result.density[i]*(result.velocity[i+1][0]-result.velocity[i][0])*dt/dx;
-                    data.pressure[i] = result.pressure[i] - (data.gamma*result.pressure[i] + (data.gamma-1)*qi)*(result.velocity[i+1][0]-result.velocity[i][0])*dt/dx;
+                    Flux_i_minusHalf[0] = dens_vel_pres[0]*dens_vel_pres[1];                
+                    Flux_i_minusHalf[1] = dens_vel_pres[2]+Flux_i_minusHalf[0]*dens_vel_pres[1];
+                    Flux_i_minusHalf[2] = (heatCapRatio/(heatCapRatio-1)*dens_vel_pres[2]+Flux_i_minusHalf[0]*dens_vel_pres[1]/2)*dens_vel_pres[1];
+
+                    riemanSolver.GetShockTubeAnswerAtZero(data.density[i],data.momentum[i][0]/data.density[i],(data.energy[i]-data.momentum[i][0]*data.momentum[i][0]/(2*data.density[i]))*(heatCapRatio-1)
+                                                        ,data.density[i+1],data.momentum[i+1][0]/data.density[i+1],(data.energy[i+1]-data.momentum[i+1][0]*data.momentum[i+1][0]/(2*data.density[i+1]))*(heatCapRatio-1)
+                                                        ,dens_vel_pres);
+
+                    Flux_i_plusHalf[0] = dens_vel_pres[0]*dens_vel_pres[1];                
+                    Flux_i_plusHalf[1] = dens_vel_pres[2]+Flux_i_plusHalf[0]*dens_vel_pres[1];
+                    Flux_i_plusHalf[2] = (heatCapRatio/(heatCapRatio-1)*dens_vel_pres[2]+Flux_i_plusHalf[0]*dens_vel_pres[1]/2)*dens_vel_pres[1];
+
+                    data.density[i] += -dt/dx * (Flux_i_plusHalf[0] - Flux_i_minusHalf[0]);
+                    data.momentum[i][0] += -dt/dx * (Flux_i_plusHalf[1] - Flux_i_minusHalf[1]);
+                    data.energy[i] += -dt/dx * (Flux_i_plusHalf[2] - Flux_i_minusHalf[2]);
                 }
             }
-        #pragma omp barrier
         }
-        
-        void UpdateVelocityDensityPressure_xDif(CpiData& data, const CpiCoreResult& result, real dt, real dx)
-        {
-        #pragma omp parallel
-            {
-                int i, j;
-        #pragma omp for
-                for (i = 1; i < data.number-1; ++i)
-                {
-                    for (j = 0; j < DIM; ++j)
-                    {
-                        data.velocity_xDif[i][j] = result.velocity[i][0] + ((data.velocity[i+1][0] - result.velocity[i+1][0])-(data.velocity[i-1][0]-result.velocity[i-1][0]))/(2*dx) - result.velocity_xDif[i][0]*(data.velocity[i+1][0]-data.velocity[i-1][0])*dt/(2*dx);
-                    }
-
-                    data.density_xDif[i] = result.density[i] + ((data.density[i+1] - result.density[i+1])-(data.density[i-1]-result.density[i-1]))/(2*dx) - result.density_xDif[i]*(data.density[i+1]-data.density[i-1])*dt/(2*dx);
-                    data.pressure_xDif[i] = result.pressure[i] + ((data.pressure[i+1] - result.pressure[i+1])-(data.pressure[i-1]-result.pressure[i-1]))/(2*dx) - result.pressure_xDif[i]*(data.pressure[i+1]-data.pressure[i-1])*dt/(2*dx);
-                }
-            }
-        #pragma omp barrier
-        }
-
-        real VonNeumannArtificialViscosity(real dens,real pressure,real u_dx,real gamma,real lamda)
-        {
-            if(u_dx >= 0)
-                return 0;
-            
-            const real Cs = std::sqrt(gamma*pressure/dens);
-
-            return alpha*(-dens*Cs*u_dx*lamda + (gamma+1)/2.0*u_dx*u_dx*lamda*lamda);
-        }
-
     };
 }
+#endif

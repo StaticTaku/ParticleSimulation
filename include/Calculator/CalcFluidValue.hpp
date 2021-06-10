@@ -1,7 +1,6 @@
 #pragma once
 #include <Settings.hpp>
 #include <PhysicsValue/SphDataWithGamma.hpp>
-#include <PhysicsValue/CpiData.hpp>
 #include <CalculatedResult/CpiCoreResult.hpp>
 #include <CalculatedResult/FluidResult.hpp>
 #include <cmath>

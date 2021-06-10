@@ -19,11 +19,11 @@
 using namespace std;
 
 #if defined(ShockTube1D)
-    ofstream fs("Data/ShockTube/1D/fluidValue.csv");
+    ofstream fs("Data/ShockTube/SPH/1D/fluidValue.csv");
 #elif defined(ShockTube2D)
-    ofstream fs("Data/ShockTube/2D/fluidValue.csv");
+    ofstream fs("Data/ShockTube/SPH/2D/fluidValue.csv");
 #elif defined(ShockTube3D)
-    ofstream fs("Data/ShockTube/3D/fluidValue.csv");
+    ofstream fs("Data/ShockTube/SPH/3D/fluidValue.csv");
 #endif
 
 int main()
