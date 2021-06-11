@@ -1,6 +1,6 @@
 #define ShockTube1D
 #define SphMethod
-#define VelocityVerletMethod
+#define LeapFrogMethod
 #include <Settings.hpp>
 
 #include <iostream>

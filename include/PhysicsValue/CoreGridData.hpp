@@ -4,12 +4,10 @@
 
 struct CoreGridData
 {
-    int number;
     real position[N][DIM];
     real density[N];
     real momentum[N][DIM];
     real energy[N];
-    CoreGridData(int num):number(num) {}
 
     real GetVelocity(int i, int dim) const
     {   

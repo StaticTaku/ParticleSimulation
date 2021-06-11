@@ -268,7 +268,7 @@ namespace Godunov
     private:
         RiemanSolver riemanSolver;
     public:
-        void UpdateDensity_Momentum_Energy(const real dx, const real dt, CoreGridData& data)
+        void UpdateDensity_Momentum_Energy(const real* dr, const real dt,CoreGridData& data)
         {
         #pragma omp parallel
             {

@@ -2,6 +2,7 @@
 #include <Settings.hpp>
 #include <PhysicsValue/SphDataWithGamma.hpp>
 #include <PhysicsValue/CoreGridData.hpp>
+#include <PhysicsValue/RectangleGridData.hpp>
 #include <iostream>
 
 #if defined(SphMethod)
@@ -180,6 +181,104 @@ namespace Grid
         }
 
         return dx;
+    }
+
+    inline void SetShockTube(real dens_L,real pres_L,real vel_L,real dens_R,real pres_R,real vel_R,real* length,RectangleGridData& data)
+    {        
+        for(int d = 0;d<DIM;++d)
+            data.dr[d] = length[d]/(data.number[d]-1);
+        
+        if(DIM==1)
+        {
+            for(int i = 0;i<data.number[0];++i)
+                data.position[i][0] = -length[0]/2 + data.dr[0]*i;
+
+            for(int i = 0;i<data.number[0]/2 + 1;++i)
+            {
+                data.density[i] = dens_L;
+                data.momentum[i][0] = dens_L*vel_L;
+                data.energy[i] = pres_L/(heatCapRatio-1) + dens_L/2 * vel_L*vel_L;
+            }
+            for(int i = data.number[0]/2 + 1;i<data.number[0];++i)
+            {
+                data.density[i] = dens_R;
+                data.momentum[i][0] = dens_R*vel_R;
+                data.energy[i] = pres_R/(heatCapRatio-1) + dens_R/2 * vel_R*vel_R;
+            }
+        }else if(DIM==2)
+        {
+            for(int y = 0;y<data.number[1];++y)
+            {
+                real y_pos =  -length[1]/2+length[1]*real(y)/data.number[1];
+                for(int x = 0;x<data.number[0]/2;++x)
+                {
+                    int id = y*data.number[0] + x;
+                    data.position[id][0] = -length[0]/2+length[0]*real(x)/data.number[0];
+                    data.position[id][1] = y_pos;
+
+                    data.density[id] = dens_L;
+
+                    data.momentum[id][0] = dens_L*vel_L;
+                    data.momentum[id][1] = 0;
+
+                    data.energy[id] = pres_L/(heatCapRatio-1) + dens_L/2 * vel_L*vel_L;
+                }
+                for(int x = data.number[0]/2;x < data.number[0]; ++x)
+                {
+                    int id = y*data.number[0] + x;
+                    data.position[id][0] = -length[0]/2+length[0]*real(x)/data.number[0];
+                    data.position[id][1] = y_pos;
+
+                    data.density[id] = dens_R;
+
+                    data.momentum[id][0] = dens_R*vel_R;
+                    data.momentum[id][1] = 0;
+
+                    data.energy[id] = pres_L/(heatCapRatio-1) + dens_L/2 * vel_R*vel_R;
+                }
+            }
+        }else if(DIM==3)
+        {
+            for(int z = 0;z < data.number[2]; ++z)
+            {
+                double z_pos = -length[2]/2+length[2]*real(z)/data.number[2];
+                for(int y = 0;y < data.number[1]; ++y)
+                {
+                    double y_pos =  -length[1]/2+length[1]*real(y)/data.number[1];
+
+                    for(int x = 0;x < data.number[0]/2;++x)
+                    {
+                        int id = z*(data.number[0]*data.number[1]) + y*data.number[0] + x;
+                        data.position[id][0] = -length[0]/2+length[0]*real(x)/data.number[0];
+                        data.position[id][1] = y_pos;
+                        data.position[id][2] = z_pos;
+
+                        data.density[id] = dens_L;
+
+                        data.momentum[id][0] = dens_L*vel_L;
+                        data.momentum[id][1] = 0;
+                        data.momentum[id][2] = 0;
+
+                        data.energy[id] = pres_L/(heatCapRatio-1) + dens_L/2 * vel_R*vel_R;
+                    }
+                    for(int x = data.number[0]/2;x < data.number[0]; ++x)
+                    {
+                        int id = z*(data.number[0]*data.number[1]) + y*data.number[0] + x;
+                        data.position[id][0] = -length[0]/2+length[0]*real(x)/data.number[0];
+                        data.position[id][1] = y_pos;
+                        data.position[id][2] = z_pos;
+
+                        data.density[id] = dens_L;
+
+                        data.momentum[id][0] = dens_R*vel_R;
+                        data.momentum[id][1] = 0;
+                        data.momentum[id][2] = 0;
+
+                        data.energy[id] = pres_L/(heatCapRatio-1) + dens_L/2 * vel_R*vel_R;
+                    }
+                }
+            }
+        }
     }
 }
 #endif

@@ -13,6 +13,7 @@ ans[2] = pressure(x=0);
 
 */
 
+#if defined(GodunovMethod)
 class RiemanSolver
 {
 public:
@@ -181,3 +182,5 @@ private:
         return dens_phi*c_phi*c_phi/heatCapRatio;
     }
 };
+
+#endif
