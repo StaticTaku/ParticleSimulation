@@ -8,6 +8,7 @@ struct CoreGridData
     real density[N];
     real momentum[N][DIM];
     real energy[N];
+    bool isStatic[N];
 
     real GetVelocity(int i, int dim) const
     {   

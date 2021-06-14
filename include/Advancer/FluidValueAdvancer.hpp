@@ -4,7 +4,7 @@
 #include <PhysicsValue/SphDataWithGamma.hpp>
 #include <PhysicsValue/SphCoreData.hpp>
 #include <CalculatedResult/FluidResult.hpp>
-#include <CalculatedResult/CpiCoreResult.hpp>
+#include <PhysicsValue/RectangleGridData.hpp>
 #include <Advancer/VelocityVerlet.hpp>
 #include <Advancer/LeapFrog.hpp>
 #include <Utility/RiemanSolver.hpp>
@@ -268,7 +268,7 @@ namespace Godunov
     private:
         RiemanSolver riemanSolver;
     public:
-        void UpdateDensity_Momentum_Energy(const real* dr, const real dt,CoreGridData& data)
+        void UpdateDensity_Momentum_Energy(const real* dr, const real dt,RectangleGridData& data)
         {
         #pragma omp parallel
             {
@@ -276,7 +276,7 @@ namespace Godunov
                 real Flux_i_minusHalf[3];
                 real Flux_i_plusHalf[3];
         #pragma omp for
-                for(int i = 1;i<data.number-1;++i)
+                for(int i = 0;i<data.AllNum();++i)
                 {
                     riemanSolver.GetShockTubeAnswerAtZero(data.density[i-1],data.momentum[i-1][0]/data.density[i-1],(data.energy[i-1]-data.momentum[i-1][0]*data.momentum[i-1][0]/(2*data.density[i-1]))*(heatCapRatio-1)
                                                         ,data.density[i],data.momentum[i][0]/data.density[i],(data.energy[i]-data.momentum[i][0]*data.momentum[i][0]/(2*data.density[i]))*(heatCapRatio-1)
@@ -297,6 +297,8 @@ namespace Godunov
                     data.density[i] += -dt/dx * (Flux_i_plusHalf[0] - Flux_i_minusHalf[0]);
                     data.momentum[i][0] += -dt/dx * (Flux_i_plusHalf[1] - Flux_i_minusHalf[1]);
                     data.energy[i] += -dt/dx * (Flux_i_plusHalf[2] - Flux_i_minusHalf[2]);
+
+
                 }
             }
         }

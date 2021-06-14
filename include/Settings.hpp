@@ -16,13 +16,13 @@ using real = double;
     #if defined(SphMethod)
         using real = double;
         constexpr short DIM = 1; //次元
-        constexpr int N = 600; //粒子数
+        constexpr int N = 800; //粒子数
         constexpr real ZERO = 1.0e-8; //絶対値がこれ以下の値は0とみなす
         constexpr real eta = 0.01; //0割りの回避のための定数
         constexpr real Ccfl = 0.1; 
 
         constexpr int number = N;
-        constexpr real h = 0.015; //固定長
+        constexpr real h = 0.01; //固定長
         constexpr real mass_coef = 300.0/N*(0.02/3); //密度をdensにするために必要な質量にかかる係数
         constexpr real heatCapRatio = 1.4; //気体の比熱
         constexpr real alpha = 1; //人口粘性の強さを決める係数

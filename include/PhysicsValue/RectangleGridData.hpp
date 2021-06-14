@@ -13,4 +13,13 @@ struct RectangleGridData:public CoreGridData
         for(int d = 0;d<DIM;++d)
             number[d] = num[d];
     }
+
+    int AllNum()
+    {
+        int a = 0;
+        for(int d = 0;d<DIM;++d)
+            a += number[d];
+
+        return a;
+    }
 };
